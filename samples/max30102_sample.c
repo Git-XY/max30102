@@ -1,8 +1,9 @@
 #include "max30102.h"
-#include "max30102_algorithm.h"
-#include "algorithm_by_RF.h"
 #include <stdio.h>
-int max30102_sample()
+
+#ifdef PKG_USING_MAX330102_ALGORITHM_HR_ONLY
+#include "max30102_algorithm.h"
+int max30102_hr_only()
 {
     const rt_uint8_t RATE_SIZE = 4; //Increase this for more averaging. 4 is good.
     rt_uint8_t rates[RATE_SIZE];     //Array of heart rates
@@ -48,7 +49,11 @@ int max30102_sample()
         return -RT_ERROR;
     return RT_EOK;
 }
+MSH_CMD_EXPORT(max30102_hr_only, max30102 hr only sample);
+#endif
 
+#ifdef PKG_USING_MAX330102_ALGORITHM_SPO2
+#include "algorithm_by_RF.h"
 int max30102_spo2(void)
 {
     uint32_t aun_ir_buffer[100]; 	 //IR LED sensor data
@@ -74,6 +79,6 @@ int max30102_spo2(void)
         return -RT_ERROR;
     return RT_EOK;
 }
+MSH_CMD_EXPORT(max30102_spo2, max30102 spo2 sample );
+#endif
 
-MSH_CMD_EXPORT(max30102_sample, max30102 sample);
-MSH_CMD_EXPORT(max30102_spo2, max30102 spo2 );

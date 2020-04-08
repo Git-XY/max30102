@@ -10,7 +10,7 @@
 #include "max30102_reg.h"
 #include "max30102.h"
 #include <string.h>
-//#define MAX30102_DEBUG
+#define MAX30102_DEBUG
 #ifdef  MAX30102_DEBUG
 #define MAX30102DEBUG rt_kprintf
 #endif
@@ -24,7 +24,7 @@ static const sensor_default_setting ops_default =
     .smpave     = SMP_AVE_4,
     .ledmode    = SPO2_MODE,
     .adcscale   = ADC_FULL_SCALE_4096,
-    .samplerate = SAMPLE_RATE_200,
+    .samplerate = SAMPLE_RATE_100,
     .pulsewidth = PULSE_WIDTH_411,
     .powerlevel = LED_CURRENT_6_4_MA
 };
@@ -223,7 +223,7 @@ rt_err_t max30102_read_fifo_allclear(void)
 ***************************************************************************************************************************/
 rt_err_t max30102_mode_soft_reset(void)
 {
-    if(max30102_set_funbit(MAX30102_REG_MODE_CONFIG,RESET_MODE,FUN_ENABLE) == RT_EOK)
+    if(max30102_set_funbit(MAX30102_REG_MODE_CONFIG,RESET,FUN_ENABLE) == RT_EOK)
     {
         rt_uint8_t ret;
         rt_tick_t start_time = rt_tick_get();
@@ -245,12 +245,12 @@ rt_err_t max30102_mode_soft_reset(void)
 
 rt_err_t max30102_mode_shutdown(void)
 {
-    return max30102_set_funbit(MAX30102_REG_MODE_CONFIG,SHDN_MODE,FUN_ENABLE);
+    return max30102_set_funbit(MAX30102_REG_MODE_CONFIG,SHDN,FUN_ENABLE);
 }
 
 rt_err_t max30102_mode_wakeup(void)
 {
-    return max30102_set_funbit(MAX30102_REG_MODE_CONFIG,SHDN_MODE,FUN_DISABLE);
+    return max30102_set_funbit(MAX30102_REG_MODE_CONFIG,SHDN,FUN_DISABLE);
 }
 
 rt_err_t max30102_set_mode_ledmode(enum max30102_mode_config mode)
@@ -401,9 +401,9 @@ rt_err_t max30102_setup(
         return -RT_ERROR;
     //Page 17 of the data sheet, if enabled, it should be used with read and write pointers
     //Because it defaults to zero after reset, it does not need to be set unless this bit is used.
-//	if(max30102_set_fifo_rollover(FUN_ENABLE)!= RT_EOK)
+//	if(max30102_set_fifo_rollover(FUN_DISABLE)!= RT_EOK)
 //		return -RT_ERROR;
-//    //If the A_FULL interrupt flag is not enabled, you do not need to set A_FULL
+    //If the A_FULL interrupt flag is not enabled, you do not need to set A_FULL
 //	if(max30102_set_fifo_afull(FIFO_A_FULL_17)!= RT_EOK)
 //		return -RT_ERROR;
 
@@ -462,12 +462,12 @@ rt_uint8_t max30102_get_activeleds(void)
         return 0;
 }
 
-rt_err_t max30102_read_fifo(rt_uint32_t *red_value,rt_uint32_t *ir_value)
+static rt_err_t max30102_read_fifo(rt_uint32_t *red_value,rt_uint32_t *ir_value)
 {
     rt_uint8_t buf[max30102_get_activeleds()*3];
     rt_uint32_t temp;
     *red_value = 0;
-    *ir_value  = 0;
+    *ir_value = 0;
     if(max30102_request_reg(MAX30102_REG_FIFO_DATA) != RT_EOK)
         return -RT_ERROR;
 
@@ -483,7 +483,7 @@ rt_err_t max30102_read_fifo(rt_uint32_t *red_value,rt_uint32_t *ir_value)
     *red_value+=temp;
     *red_value&=0x03FFFF;  //Mask MSB [23:18]
 
-    if(max30102_get_activeleds() == 2)
+    if((ops_default.ledmode == SPO2_MODE)||(ops_default.ledmode == MULTI_LED_MODE))
     {
         temp = buf[3];
         temp <<= 16;
@@ -500,22 +500,12 @@ rt_err_t max30102_read_fifo(rt_uint32_t *red_value,rt_uint32_t *ir_value)
 
 rt_size_t max30102_get_data(rt_uint32_t *red_value,rt_uint32_t *ir_value,rt_uint32_t len)
 {
-    rt_uint8_t ret   = 0;
-    rt_size_t sample = 0;
-//	rt_uint8_t write_pointer = 0,read_pointer = 0;
-//	if(max30102_read_fifo_pointer(MAX30102_REG_FIFO_WR_PTR,&write_pointer) != RT_EOK)
-//		 return 0; 
-//	if(max30102_read_fifo_pointer(MAX30102_REG_FIFO_RD_PTR,&read_pointer)  != RT_EOK)
-//		return 0; 
-	
+    rt_uint8_t ret;
+    rt_uint32_t sample;
     while(len > 0)
     {
         if(max30102_read_intrrupt(1,&ret) != RT_EOK)
             return 0;
-
-//		if((ret & A_FULL))
-//			rt_kprintf("FIFO A FULL!\r\n");
-
         if((ret & ALC_OVF) != 1)
         {
             if((ret & PPG_RDY))
@@ -523,7 +513,7 @@ rt_size_t max30102_get_data(rt_uint32_t *red_value,rt_uint32_t *ir_value,rt_uint
                 if(max30102_read_fifo(red_value,ir_value) != RT_EOK)
                     return 0;
 #ifdef MAX30102_DEBUG
-//                MAX30102DEBUG("red_value:%d ir_value:%d ret:%x\n",*red_value,*ir_value,ret);
+                MAX30102DEBUG("red_value:%d ir_value:%d ret:%x\n",*red_value,*ir_value,ret);
 #endif
                 len--;
                 red_value++;
@@ -533,7 +523,7 @@ rt_size_t max30102_get_data(rt_uint32_t *red_value,rt_uint32_t *ir_value,rt_uint
         }
         else
             return 0;// ALC_OVF overflow Data Sheet Page 12
-        rt_thread_mdelay(1);//Release i2c resources
+        rt_thread_mdelay(10);//Release i2c resources
     }
     return sample;
 }
@@ -541,15 +531,16 @@ rt_size_t max30102_get_data(rt_uint32_t *red_value,rt_uint32_t *ir_value,rt_uint
 rt_uint32_t max30102_get_per_sample(rt_uint8_t choose)
 {
     rt_uint32_t red_value,ir_value;
-    if(max30102_get_data(&red_value,&ir_value,1) != 1)
+
+    if(max30102_read_fifo(&red_value,&ir_value) != RT_EOK)
         return 0;
+	else
+	{
+		    if(choose == 1)
+        return red_value;
     else
-    {
-        if(choose == 1)
-            return red_value;
-        else
-            return ir_value;
-    }
+        return ir_value;
+	}
 }
 /**************************************************************************************************************************
 *                                              max30102  init  function
@@ -567,7 +558,7 @@ int max30102_hw_init()
         return -RT_ERROR;
     }
 
-    if((max30102_read_id(MAX30102_REG_PART_ID,&id) != RT_EOK)||(id != MAX30102_PART_ID_VALUE))
+    if((max30102_read_id(MAX30102_REG_PART_ID,&id) != RT_EOK)&&(id != MAX30102_PART_ID_VALUE))
     {
         rt_kprintf("can't find max30102 device\r\n");
         return -RT_ERROR;

@@ -52,7 +52,7 @@ int max30102_hr_only()
 MSH_CMD_EXPORT(max30102_hr_only, max30102 hr only sample);
 #endif
 
-#ifdef PKG_USING_MAX330102_ALGORITHM_SPO2
+#if defined(PKG_USING_MAX330102_ALGORITHM_SPO2)||defined(RT_DEBUG_MAX30102_ALGORITHM_SPO2)
 #include "algorithm_by_RF.h"
 int max30102_spo2(void)
 {
@@ -80,5 +80,6 @@ int max30102_spo2(void)
     return RT_EOK;
 }
 MSH_CMD_EXPORT(max30102_spo2, max30102 spo2 sample );
+
 #endif
 

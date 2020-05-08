@@ -26,7 +26,7 @@ static const sensor_default_setting ops_default =
     .adcscale   = ADC_FULL_SCALE_4096,
     .samplerate = SAMPLE_RATE_200,
     .pulsewidth = PULSE_WIDTH_411,
-    .powerlevel = LED_CURRENT_6_4_MA
+    .powerlevel = LED_CURRENT_12_5_MA
 };
 
 /**
@@ -597,6 +597,7 @@ int max30102_hw_init()
 
     return RT_EOK;
 }
-INIT_APP_EXPORT(max30102_hw_init);
-MSH_CMD_EXPORT(max30102_mode_shutdown,max30102 shutdown);
-MSH_CMD_EXPORT(max30102_mode_wakeup,max30102 wakeup);
+
+INIT_DEVICE_EXPORT(max30102_hw_init);
+//MSH_CMD_EXPORT(max30102_mode_shutdown,max30102 shutdown);
+//MSH_CMD_EXPORT(max30102_mode_wakeup,max30102 wakeup);

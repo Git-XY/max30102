@@ -52,7 +52,7 @@ static const float sum_X2 = 83325; //¾¯¸æ£ºÈç¹ûÄú¸ü¸ÄÁËÉÏÃæµÄST»òFS£¬Ôò±ØĞëÖØĞÂ¼
 //ÔÚMIN_HRºÍMAX_HRÖ®¼ä¡£ÀıÈç£¬Èç¹û¸ôÒ¹²âÁ¿µÄHRÔÚ46µ½65Ö®¼ä±ä»¯£¬µ«ÓĞ90£¥µÄÊ±¼ä
 //±£³ÖÔÚ50µ½60Ö®¼ä£¬È»ºó½«ÆäÉèÖÃÎª60¡£
 //¾¯¸æ£ºÕâÊÇÒ»¸öCRUCIAL²ÎÊı£¡ÕıÈ·µÄÈËÁ¦×ÊÔ´ÆÀ¹ÀÈ¡¾öÓÚ´Ë¡£
-#define TYPICAL_HR 65
+#define TYPICAL_HR 75
 //Á½¸ö×ÔÏà¹ØĞòÁĞÔªËØµÄ×îĞ¡±ÈÂÊ£ºÒ»¸öÖÍºóÓëÒ»¸öÖÍºó0¡£
 //¸ßÖÊÁ¿ĞÅºÅµÄ±ÈÂÊ±ØĞë´óÓÚ´Ë×îĞ¡Öµ¡£
 static const float min_autocorrelation_ratio = 0.5f;
@@ -74,8 +74,16 @@ static const float mean_X           = (float)(BUFFER_SIZE-1)/2.0f; //´Ó0µ½BUFFER
 
 
 
-void rf_heart_rate_and_oxygen_saturation(uint32_t *pun_ir_buffer, int32_t n_ir_buffer_length, uint32_t *pun_red_buffer, float *pn_spo2, int8_t *pch_spo2_valid,
-        int32_t *pn_heart_rate, int8_t *pch_hr_valid, float *ratio, float *correl)
+void rf_heart_rate_and_oxygen_saturation(
+							uint32_t *pun_ir_buffer, 
+							int32_t n_ir_buffer_length, 
+							uint32_t *pun_red_buffer, 
+							float *pn_spo2,
+							int8_t *pch_spo2_valid,
+							int32_t *pn_heart_rate,
+							int8_t *pch_hr_valid, 
+							float *ratio, 
+							float *correl)
 /**
 *¼ÆËãĞÄÂÊºÍSpO2Ë®Æ½£¬Robert Fraczkiewicz°æ±¾
 * Ï¸½Ú
